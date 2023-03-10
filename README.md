@@ -1,5 +1,3 @@
-# gumtree-games
+# Gumtree Games
 
-Web scraping Gumtree Video Games listings and pinging them when there are new listings available
-
-<img src="GumtreeGamesBanner.png" />
+![GumtreeGamesBanner](GumtreeGamesBanner.png)
