@@ -36,33 +36,28 @@ def findListingLocation(listingAdditionalInfo):
         listingLocation = ''
     return listingLocation
 
-# Finding the condition of the listing
-def findListingCondition(listingAdditionalInfo):
+def checkIfAd(listing):
     try:
-        listingCondition = listingAdditionalInfo.find('span', class_='user-ad-row-new-design__auto-attribute').text
+        listing.find('span', class_="user-ad-row-new-design__flag-top").text
+        return True
     except:
-        listingCondition = ''
-    return listingCondition
+        return False
 
 def findListingInfo(index):
     name = findListingName(listings[index])
     description = findListingDescription(listings[index])
     price = findListingPrice(listingsAdditionalInfo[index])
     location = findListingLocation(listingsAdditionalInfo[index])
-    condition = findListingCondition(listingsAdditionalInfo[index])
-    listing = gumtreeListing(name, description, price, location, condition)
+    listing = gumtreeListing(name, description, price, location)
     return listing
-
 
 names = []
 descriptions = []
 prices = []
 locations = []
-conditions = []
-
 
 # for pages 1 to 5 
-for i in range(6):
+for i in range(1,6):
     url = f'https://www.gumtree.com.au/s-video-games-consoles/page-{i}/c18459r10'
     html_page = requests.get(url)
     soup = BeautifulSoup(html_page.content, 'html.parser')
@@ -70,15 +65,14 @@ for i in range(6):
     listingsAdditionalInfo = soup.find_all('div', class_='user-ad-row-new-design__right-content')
     
     for index in range (0, len(listings)):
-        names.append(findListingName(listings[index]))
-        descriptions.append(findListingDescription(listings[index]))
-        prices.append(findListingPrice(listingsAdditionalInfo[index]))
-        locations.append(findListingLocation(listingsAdditionalInfo[index]))
-        conditions.append(findListingCondition(listingsAdditionalInfo[index]))
-        #listing = findListingInfo(index)
+        if checkIfAd(listings[index]) == False:
+            names.append(findListingName(listings[index]))
+            descriptions.append(findListingDescription(listings[index]))
+            prices.append(findListingPrice(listingsAdditionalInfo[index]))
+            locations.append(findListingLocation(listingsAdditionalInfo[index]))
 
     time.sleep(5)
 
-listingDictionary = dict(name = names, description = descriptions, price = prices, location = locations, condition = conditions)
+listingDictionary = dict(name = names, description = descriptions, price = prices, location = locations)
 df = pd.DataFrame.from_dict(listingDictionary)
 df.to_csv('gumtree_videogame_listings.csv', index = False, sep=',') 
