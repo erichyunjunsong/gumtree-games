@@ -1,8 +1,5 @@
 from bs4 import BeautifulSoup
-import requests
-import pandas as pd
-import time
-import gumtreeListing
+import sqlite3
 
 # Finding the listing name
 def findListingName(listing):
@@ -54,37 +51,45 @@ def checkIfAd(listing):
     except:
         return False
 
-def findListingInfo(index):
-    name = findListingName(listings[index])
-    description = findListingDescription(listings[index])
-    price = findListingPrice(listings[index])
-    location = findListingLocation(listings[index])
-    listing = gumtreeListing(name, description, price, location)
-    return listing
 
-names = []
-descriptions = []
-prices = []
-locations = []
-urls = []
+async def is_new_listing(title):
+    conn = sqlite3.connect('listings.db')
 
-# for pages 1 to 2 
-for i in range(1,3):
-    url = f'https://www.gumtree.com.au/s-video-games-consoles/page-{i}/c18459r10'
-    html_page = requests.get(url)
-    soup = BeautifulSoup(html_page.content, 'html.parser')
-    listings = soup.find_all('div', class_='user-ad-row-new-design__main-content')
+    # Create a cursor object to execute SQL queries
+    cursor = conn.cursor()
 
-    for index in range (0, len(listings)):
-        if checkIfAd(listings[index]) == False:
-            names.append(findListingName(listings[index]))
-            descriptions.append(findListingDescription(listings[index]))
-            prices.append(findListingPrice(listings[index]))
-            locations.append(findListingLocation(listings[index]))
-            urls.append(findListingURL(listings[index]))
+    # Check if the title exists in the database
+    cursor.execute('SELECT title FROM listings WHERE title = ?', (title,))
+    existing_title = cursor.fetchone()
 
-    time.sleep(5)
+    # Close the connection
+    conn.close()
 
-listingDictionary = dict(name = names, description = descriptions, price = prices, location = locations, url = urls)
-df = pd.DataFrame.from_dict(listingDictionary)
-df.to_csv('gumtree_videogame_listings.csv', index = False, sep=',') 
+    # Return True if the title doesn't exist in the database (new listing)
+    return not existing_title
+
+async def save_listing(title, description, price, location, url):
+    # Connect to the SQLite database
+    conn = sqlite3.connect('listings.db')
+
+    # Create a cursor object to execute SQL queries
+    cursor = conn.cursor()
+
+    # Create a table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS listings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            description TEXT,
+            price NUMBER, 
+            location TEXT,
+            url TEXT
+        )
+    ''')
+
+    # Insert the new listing into the table
+    cursor.execute('INSERT INTO listings (title, description, price, location, url) VALUES (?, ?, ?, ?, ?)', (title, description, price, location, url,))
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
