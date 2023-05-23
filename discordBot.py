@@ -6,8 +6,6 @@ import discord
 
 # web scraping
 import gumtreeScraping as gs
-from bs4 import BeautifulSoup
-import requests
 
 # time delays
 import time
@@ -33,10 +31,7 @@ async def on_message(message):
 async def check_for_new_listings():
     channel = client.get_channel(CHANNEL_ID)
     for pageNum in range(1,4):
-        url = f'https://www.gumtree.com.au/s-video-games-consoles/page-{pageNum}/c18459r10'
-        html_page = requests.get(url)
-        soup = BeautifulSoup(html_page.content, 'html.parser')
-        listings = soup.find_all('div', class_='user-ad-row-new-design__main-content')
+        listings = gs.getListingsOnPage(pageNum)
 
         for listingIndex in range (0, len(listings)):
             if gs.checkIfAd(listings[listingIndex]) == False:
@@ -65,11 +60,8 @@ async def gumtree_ping():
     channel = client.get_channel(CHANNEL_ID)
 
     while(True):
-        for i in range(1,4):
-            url = f'https://www.gumtree.com.au/s-video-games-consoles/page-{i}/c18459r10'
-            html_page = requests.get(url)
-            soup = BeautifulSoup(html_page.content, 'html.parser')
-            listings = soup.find_all('div', class_='user-ad-row-new-design__main-content')
+        for pageNum in range(1,4):
+            listings = gs.getListingsOnPage(pageNum)
 
             for index in range (0, len(listings)):
                 if gs.checkIfAd(listings[index]) == False:
@@ -78,15 +70,18 @@ async def gumtree_ping():
                     price = gs.findListingPrice(listings[index])
                     location = gs.findListingLocation(listings[index])
                     url = gs.findListingURL(listings[index])
+                    gs.isSellerHighlyRated(url)
                     
                     if (await gs.is_new_listing(title)):
                         await gs.save_listing(title, description, price, location, url)
 
+                        gs.isSellerHighlyRated(url)
+
                         embed = discord.Embed(
-                        title=title,
-                        url=url,
-                        description=description,
-                        color=discord.Color.green()
+                            title=title,
+                            url=url,
+                            description=description,
+                            color=discord.Color.green()
                         )
                         embed.add_field(name="Price", value=price)
                         embed.add_field(name="Location", value=location)

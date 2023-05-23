@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import requests
 import sqlite3
 
 # Finding the listing name
@@ -50,7 +51,28 @@ def checkIfAd(listing):
         return True
     except:
         return False
+    
+# Get and return listings for a specific page number of a Gumtree search
+def getListingsOnPage(pageNum):
+    url = f'https://www.gumtree.com.au/s-video-games-consoles/page-{pageNum}/c18459r10'
+    html_page = requests.get(url)
+    soup = BeautifulSoup(html_page.content, 'html.parser')
+    listings = soup.find_all('div', class_='user-ad-row-new-design__main-content')
+    return listings
 
+def isSellerHighlyRated(listingURL):
+    listing_html_page = requests.get(listingURL)
+    soup = BeautifulSoup(listing_html_page.content, 'html.parser')
+    sellerURL = soup.find('a', class_='seller-profile')['href']
+    sellerPageURL = f'https://www.gumtree.com.au{sellerURL}'
+    formattedsellerPageURL = sellerPageURL.replace(" ", "%20")
+    seller_html_page = requests.get(formattedsellerPageURL)
+    soup = BeautifulSoup(seller_html_page.content, 'html5lib')
+    try:
+        soup.find('div', class_='seller-profile--with-trust-marker-wrapper')
+        return True
+    except:
+        return False
 
 async def is_new_listing(title):
     conn = sqlite3.connect('listings.db')
