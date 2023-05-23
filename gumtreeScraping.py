@@ -43,6 +43,12 @@ def findListingURL(listing):
         listingURL = ''
     return listingURL
 
+# Finding the first image of the listing
+def findListingImage(listingURL):
+    listing_html_page = requests.get(listingURL)
+    soup = BeautifulSoup(listing_html_page.content, 'html.parser')
+    listingImageURL = soup.find('meta', {"property":"og:image"})['content']
+    return listingImageURL
 
 # Checking if the listing is an ad/promoted listing
 def checkIfAd(listing):
@@ -60,37 +66,27 @@ def getListingsOnPage(pageNum):
     listings = soup.find_all('div', class_='user-ad-row-new-design__main-content')
     return listings
 
-def isSellerHighlyRated(listingURL):
-    listing_html_page = requests.get(listingURL)
-    soup = BeautifulSoup(listing_html_page.content, 'html.parser')
-    sellerURL = soup.find('a', class_='seller-profile')['href']
-    sellerPageURL = f'https://www.gumtree.com.au{sellerURL}'
-    formattedsellerPageURL = sellerPageURL.replace(" ", "%20")
-    seller_html_page = requests.get(formattedsellerPageURL)
-    soup = BeautifulSoup(seller_html_page.content, 'html5lib')
-    try:
-        soup.find('div', class_='seller-profile--with-trust-marker-wrapper')
-        return True
-    except:
-        return False
-
 async def is_new_listing(title):
-    conn = sqlite3.connect('listings.db')
+    #catch instance where the database doesn't exist
+    try: 
+        conn = sqlite3.connect('listings.db')
 
-    # Create a cursor object to execute SQL queries
-    cursor = conn.cursor()
+        # Create a cursor object to execute SQL queries
+        cursor = conn.cursor()
 
-    # Check if the title exists in the database
-    cursor.execute('SELECT title FROM listings WHERE title = ?', (title,))
-    existing_title = cursor.fetchone()
+        # Check if the title exists in the database
+        cursor.execute('SELECT title FROM listings WHERE title = ?', (title,))
+        existing_title = cursor.fetchone()
 
-    # Close the connection
-    conn.close()
+        # Close the connection
+        conn.close()
 
-    # Return True if the title doesn't exist in the database (new listing)
-    return not existing_title
+        # Return True if the title doesn't exist in the database (new listing)
+        return not existing_title
+    except:
+        return True
 
-async def save_listing(title, description, price, location, url):
+async def save_listing(title, description, price, location, url, image):
     # Connect to the SQLite database
     conn = sqlite3.connect('listings.db')
 
@@ -105,12 +101,13 @@ async def save_listing(title, description, price, location, url):
             description TEXT,
             price NUMBER, 
             location TEXT,
-            url TEXT
+            url TEXT,
+            image TEXT
         )
     ''')
 
     # Insert the new listing into the table
-    cursor.execute('INSERT INTO listings (title, description, price, location, url) VALUES (?, ?, ?, ?, ?)', (title, description, price, location, url,))
+    cursor.execute('INSERT INTO listings (title, description, price, location, url, image) VALUES (?, ?, ?, ?, ?, ?)', (title, description, price, location, url, image,))
 
     # Commit the changes and close the connection
     conn.commit()
