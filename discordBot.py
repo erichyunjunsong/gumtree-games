@@ -54,10 +54,11 @@ async def gumtree_ping():
                     location = gs.findListingLocation(listings[index])
                     url = gs.findListingURL(listings[index])
                     image = gs.findListingImage(url)
+                    sellerStartYear = gs.findSellerStartYear(url)
 
                     if (await gs.is_new_listing(title)):
                         await gs.save_listing(title, description, price, location, url, image)
-                        if showDescription == False:
+                        if showDescription == True:
                             embed = discord.Embed(
                                 title=title,
                                 url=url,
@@ -74,6 +75,7 @@ async def gumtree_ping():
 
                         embed.add_field(name="Price", value=price)
                         embed.add_field(name="Location", value=location)
+                        embed.add_field(name="Seller Start Year", value=sellerStartYear)
                         embed.set_image(url=image)
                         await channel.send(embed=embed)
 

@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import sqlite3
+import re
 
 # Finding the listing name
 def findListingName(listing):
@@ -57,6 +58,22 @@ def checkIfAd(listing):
         return True
     except:
         return False
+    
+# Checking if the seller of the listing has any points of concern
+def findSellerStartYear(listingURL):
+    listing_html_page = requests.get(listingURL)
+    soup = BeautifulSoup(listing_html_page.content, 'html.parser')
+    subURL = soup.find('a', class_="seller-profile").attrs['href']
+    sellerURL = "https://www.gumtree.com.au" + subURL
+    seller_html_page = requests.get(sellerURL)
+    soup = BeautifulSoup(seller_html_page.content, 'html.parser')
+    sellerDetails = soup.find('div', class_="user-rating seller-profile__user-rating-badge").attrs['data-user-rating']
+    regexMatch = re.search(r"sellerMemberSinceYear: '(\d{4})'", sellerDetails)
+    if regexMatch:
+        sellerStartYear = regexMatch.group(1)  # The year will be captured in the first capturing group.
+        return sellerStartYear
+    else:
+        return "Year not found."
     
 # Get and return listings for a specific page number of a Gumtree search
 def getListingsOnPage(pageNum):
